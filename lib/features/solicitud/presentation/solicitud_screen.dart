@@ -202,9 +202,7 @@ class _SolicitudScreenState extends ConsumerState<SolicitudScreen> {
     }
   }
 
-  void _enviar() {
-    // Pasa a la pantalla de transmision (M8), que muestra el progreso por
-    // pasos y hace el registro real en el backend.
+  Future<void> _enviar() async {
     final datos = {
       ..._formData(),
       'moneda': 'PEN',
@@ -215,7 +213,27 @@ class _SolicitudScreenState extends ConsumerState<SolicitudScreen> {
       'firma_cliente_base64':
           base64Encode(utf8.encode('firma:${_doc.text.trim()}')),
     };
-    context.push('/transmision', extra: datos);
+
+    await ref.read(solicitudViewModelProvider.notifier).enviar(datos);
+    if (!mounted) return;
+
+    final state = ref.read(solicitudViewModelProvider);
+    if (state.creada != null) {
+      ref.invalidate(solicitudesHistorialProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Solicitud enviada. Expediente ${state.creada!.numeroExpediente}',
+          ),
+        ),
+      );
+      context.go('/estado');
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(state.error ?? 'No se pudo enviar la solicitud.')),
+    );
   }
 
   @override

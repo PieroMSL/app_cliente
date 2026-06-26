@@ -2,19 +2,17 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
-/// Cliente HTTP del backend FastAPI mobile (puerto 8003).
+/// Cliente HTTP del backend FastAPI mobile.
 ///
-/// Base URL segun el dispositivo:
-///  - Telefono fisico (misma WiFi): IP LAN de la PC -> http://192.168.1.35:8003
-///  - Emulador Android: http://10.0.2.2:8003
-///  - Escritorio/web local: http://localhost:8003
+/// Para produccion compilar con:
+///   --dart-define=API_BASE_URL=https://tu-backend.onrender.com
 ///
 /// Mantiene el token JWT en memoria y lo adjunta como Bearer en cada request.
 class ApiClient {
-  /// Con el celular por USB usamos `adb reverse tcp:8003 tcp:8003`, que mapea
-  /// el localhost del telefono al de la PC (evita WiFi/firewall). Si prefieres
-  /// WiFi, cambia a la IP LAN de tu PC, p. ej. 'http://172.16.151.45:8003'.
-  static const String baseUrl = 'http://localhost:8003';
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:8003',
+  );
 
   final http.Client _http;
   String? _token;
@@ -33,9 +31,6 @@ class ApiClient {
   Uri _uri(String path) => Uri.parse('$baseUrl$path');
 
   Future<dynamic> get(String path) async {
-    print('--- ENVIANDO PETICION FLUTTER: GET $path ---');
-    print('Token almacenado en ApiClient: $_token');
-    print('Headers que se van a enviar: $_headers');
     final res = await _http
         .get(_uri(path), headers: _headers)
         .timeout(const Duration(seconds: 15));
@@ -43,9 +38,6 @@ class ApiClient {
   }
 
   Future<dynamic> post(String path, Map<String, dynamic> body) async {
-    print('--- ENVIANDO PETICION FLUTTER: POST $path ---');
-    print('Token almacenado en ApiClient: $_token');
-    print('Headers que se van a enviar: $_headers');
     final res = await _http
         .post(_uri(path), headers: _headers, body: jsonEncode(body))
         .timeout(const Duration(seconds: 15));
