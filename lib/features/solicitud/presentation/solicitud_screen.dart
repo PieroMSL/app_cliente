@@ -234,7 +234,7 @@ class _SolicitudScreenState extends ConsumerState<SolicitudScreen> {
           ),
         ),
       );
-      context.go('/estado');
+      context.go('/dashboard?tab=creditos');
       return;
     }
 

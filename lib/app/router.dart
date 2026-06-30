@@ -5,9 +5,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/login_viewmodel.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
-import '../features/estado_solicitudes/presentation/estado_screen.dart';
 import '../features/solicitud/presentation/borradores_screen.dart';
-import '../features/solicitud/presentation/historial_screen.dart';
 import '../features/solicitud/presentation/simulador_screen.dart';
 import '../features/solicitud/presentation/solicitud_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
@@ -30,8 +28,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
-      GoRoute(path: '/dashboard', builder: (_, __) => const DashboardScreen()),
-      GoRoute(path: '/estado', builder: (_, __) => const EstadoScreen()),
+      GoRoute(
+        path: '/dashboard',
+        builder: (_, state) {
+          final tab = state.uri.queryParameters['tab'];
+          final initialIndex = tab == 'creditos' ? 2 : 0;
+          return DashboardScreen(initialIndex: initialIndex);
+        },
+      ),
       GoRoute(
         path: '/solicitud',
         builder: (_, state) =>
@@ -42,7 +46,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const BorradoresScreen(),
       ),
       GoRoute(path: '/simulador', builder: (_, __) => const SimuladorScreen()),
-      GoRoute(path: '/historial', builder: (_, __) => const HistorialScreen()),
     ],
   );
 });

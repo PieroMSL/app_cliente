@@ -43,14 +43,29 @@ final perfilClienteProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
 });
 
 class DashboardScreen extends ConsumerStatefulWidget {
-  const DashboardScreen({super.key});
+  final int initialIndex;
+  const DashboardScreen({super.key, this.initialIndex = 0});
 
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
+
+  @override
+  void didUpdateWidget(covariant DashboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialIndex != widget.initialIndex) {
+      _currentIndex = widget.initialIndex;
+    }
+  }
 
   Future<void> _logout() async {
     await ref.read(loginViewModelProvider.notifier).logout();
@@ -71,7 +86,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final bodyWidgets = [
       _InicioView(
         cliente: cliente,
-        abrirCreditos: () => setState(() => _currentIndex = 2),
       ),
       const _CuentasView(),
       const CreditosClienteScreen(),
@@ -136,9 +150,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
 class _InicioView extends ConsumerWidget {
   final dynamic cliente;
-  final VoidCallback abrirCreditos;
 
-  const _InicioView({required this.cliente, required this.abrirCreditos});
+  const _InicioView({required this.cliente});
 
   Future<void> _refrescar(WidgetRef ref) async {
     ref.invalidate(cuentasClienteProvider);
@@ -229,19 +242,9 @@ class _InicioView extends ConsumerWidget {
                       onTap: () => context.push('/solicitud'),
                     ),
                     _QuickAction(
-                      icon: Icons.track_changes,
-                      label: 'Ver\nseguimiento',
-                      onTap: () => context.push('/estado'),
-                    ),
-                    _QuickAction(
-                      icon: Icons.history,
-                      label: 'Ver\nhistorial',
-                      onTap: () => context.push('/historial'),
-                    ),
-                    _QuickAction(
-                      icon: Icons.credit_score,
-                      label: 'Mis\ncreditos',
-                      onTap: abrirCreditos,
+                      icon: Icons.calculate_outlined,
+                      label: 'Simular\ncredito',
+                      onTap: () => context.push('/simulador'),
                     ),
                   ],
                 ),
