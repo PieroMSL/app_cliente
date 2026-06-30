@@ -2,9 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/network/api_client.dart';
 import '../../auth/presentation/login_viewmodel.dart';
 import '../../solicitud/data/solicitud_repository.dart';
 import '../../solicitud/presentation/solicitud_viewmodel.dart';
+
+final creditosClienteProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+      final data = await ref.watch(apiClientProvider).get('/cliente/creditos');
+      return (data as List)
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+    });
 
 class CreditosClienteScreen extends ConsumerStatefulWidget {
   const CreditosClienteScreen({super.key});
@@ -25,7 +34,9 @@ class _CreditosClienteScreenState extends ConsumerState<CreditosClienteScreen> {
 
     if (monto == null || monto <= 0 || motivo.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, ingresa un monto válido y un motivo.')),
+        const SnackBar(
+          content: Text('Por favor, ingresa un monto válido y un motivo.'),
+        ),
       );
       return;
     }
@@ -51,9 +62,9 @@ class _CreditosClienteScreenState extends ConsumerState<CreditosClienteScreen> {
       ref.invalidate(solicitudesHistorialProvider);
       _mostrarDialogoExito();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al enviar solicitud: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al enviar solicitud: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -92,7 +103,9 @@ class _CreditosClienteScreenState extends ConsumerState<CreditosClienteScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                ),
                 onPressed: () {
                   Navigator.of(context).pop(); // Close dialog
                   _montoController.clear();
@@ -121,9 +134,10 @@ class _CreditosClienteScreenState extends ConsumerState<CreditosClienteScreen> {
             child: const Text(
               'Mis Créditos',
               style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14),
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
           ),
           Padding(
@@ -131,58 +145,72 @@ class _CreditosClienteScreenState extends ConsumerState<CreditosClienteScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Oferta Pre-Aprobada Card
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.star, color: Colors.white, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'OFERTA PRE-APROBADA',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Tienes un capital listo para hacer crecer tu negocio por un máximo de:',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'S/ 14000.00',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                const Text(
+                  'Creditos vigentes',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 12),
+                ref
+                    .watch(creditosClienteProvider)
+                    .when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (_, __) => const Text(
+                        'No se pudieron cargar tus creditos.',
+                        style: TextStyle(color: AppColors.danger),
+                      ),
+                      data: (creditos) => creditos.isEmpty
+                          ? const Text(
+                              'Aun no tienes creditos vigentes.',
+                              style: TextStyle(color: Colors.black54),
+                            )
+                          : Column(
+                              children: creditos.map((credito) {
+                                final saldo =
+                                    (credito['saldo_total'] as num?)
+                                        ?.toDouble() ??
+                                    0;
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  child: ListTile(
+                                    leading: const Icon(
+                                      Icons.account_balance_wallet_outlined,
+                                      color: AppColors.primary,
+                                    ),
+                                    title: Text(
+                                      '${credito['producto'] ?? 'Credito'}',
+                                    ),
+                                    subtitle: Text(
+                                      '${credito['cod_cuenta_credito'] ?? '-'} · '
+                                      '${credito['estado'] ?? 'Sin estado'}',
+                                    ),
+                                    trailing: Text(
+                                      'S/ ${saldo.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                    ),
                 const SizedBox(height: 32),
 
                 // Formulario
                 const Text(
-                  '¿Cuánto dinero necesitas?',
+                  'Nueva solicitud',
                   style: TextStyle(
-                      color: AppColors.primary, fontWeight: FontWeight.bold),
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Puedes solicitar desde S/ 100 hasta un máximo de S/ 14000.00',
+                  'Ingresa el monto y el destino del credito.',
                   style: TextStyle(color: Colors.black54, fontSize: 12),
                 ),
                 const SizedBox(height: 12),
@@ -190,7 +218,10 @@ class _CreditosClienteScreenState extends ConsumerState<CreditosClienteScreen> {
                   controller: _montoController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.monetization_on_outlined, color: Colors.orange),
+                    prefixIcon: const Icon(
+                      Icons.monetization_on_outlined,
+                      color: Colors.orange,
+                    ),
                     hintText: 'Ej. 5000',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -203,7 +234,9 @@ class _CreditosClienteScreenState extends ConsumerState<CreditosClienteScreen> {
                 const Text(
                   '¿Para qué usarás este capital? (Motivo)',
                   style: TextStyle(
-                      color: AppColors.primary, fontWeight: FontWeight.bold),
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -244,12 +277,15 @@ class _CreditosClienteScreenState extends ConsumerState<CreditosClienteScreen> {
                 const Text(
                   'Historial de Solicitudes',
                   style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold),
+                    fontSize: 16,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                ref.watch(solicitudesHistorialProvider).when(
+                ref
+                    .watch(solicitudesHistorialProvider)
+                    .when(
                       data: (solicitudes) {
                         if (solicitudes.isEmpty) {
                           return const Text(
@@ -266,23 +302,33 @@ class _CreditosClienteScreenState extends ConsumerState<CreditosClienteScreen> {
                             return Card(
                               margin: const EdgeInsets.only(bottom: 8),
                               child: ListTile(
-                                title: Text('Monto: S/ ${s.montoSolicitado.toStringAsFixed(2)}'),
-                                subtitle: Text('Expediente: ${s.numeroExpediente}'),
+                                title: Text(
+                                  'Monto: S/ ${s.montoSolicitado.toStringAsFixed(2)}',
+                                ),
+                                subtitle: Text(
+                                  'Expediente: ${s.numeroExpediente}',
+                                ),
                                 trailing: Chip(
                                   label: Text(
                                     s.estado.toUpperCase(),
-                                    style: const TextStyle(fontSize: 10, color: Colors.white),
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                   backgroundColor: s.estado == 'enviado'
                                       ? Colors.blue
-                                      : (s.estado == 'aprobado' ? Colors.green : Colors.orange),
+                                      : (s.estado == 'aprobado'
+                                            ? Colors.green
+                                            : Colors.orange),
                                 ),
                               ),
                             );
                           },
                         );
                       },
-                      loading: () => const Center(child: CircularProgressIndicator()),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
                       error: (e, st) => Text('Error al cargar historial: $e'),
                     ),
               ],

@@ -120,7 +120,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   counterText: '',
                 ),
                 validator: (val) {
-                  if (val == null || val.length != 9) return 'Celular inválido (9 dígitos)';
+                  if (val == null || val.length != 9) {
+                    return 'Celular inválido (9 dígitos)';
+                  }
                   if (!val.startsWith('9')) return 'Debe empezar con 9';
                   return null;
                 },
@@ -150,7 +152,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
                 validator: (val) {
-                  if (val != _passCtrl.text) return 'Las contraseñas no coinciden';
+                  if (val != _passCtrl.text) {
+                    return 'Las contraseñas no coinciden';
+                  }
                   return null;
                 },
               ),

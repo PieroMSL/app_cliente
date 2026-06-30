@@ -11,7 +11,8 @@ import 'package:http/http.dart' as http;
 class ApiClient {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8003',
+    defaultValue:
+        'https://mobile-backend-core-andino-fastapi-vp9g.onrender.com',
   );
 
   final http.Client _http;
@@ -24,29 +25,31 @@ class ApiClient {
   bool get hasToken => _token != null;
 
   Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        if (_token != null) 'Authorization': 'Bearer $_token',
-      };
+    'Content-Type': 'application/json',
+    if (_token != null) 'Authorization': 'Bearer $_token',
+  };
 
   Uri _uri(String path) => Uri.parse('$baseUrl$path');
 
   Future<dynamic> get(String path) async {
     final res = await _http
         .get(_uri(path), headers: _headers)
-        .timeout(const Duration(seconds: 15));
+        .timeout(const Duration(seconds: 30));
     return _procesar(res);
   }
 
   Future<dynamic> post(String path, Map<String, dynamic> body) async {
     final res = await _http
         .post(_uri(path), headers: _headers, body: jsonEncode(body))
-        .timeout(const Duration(seconds: 15));
+        .timeout(const Duration(seconds: 30));
     return _procesar(res);
   }
 
   dynamic _procesar(http.Response res) {
     final ok = res.statusCode >= 200 && res.statusCode < 300;
-    final cuerpo = res.body.isEmpty ? null : jsonDecode(utf8.decode(res.bodyBytes));
+    final cuerpo = res.body.isEmpty
+        ? null
+        : jsonDecode(utf8.decode(res.bodyBytes));
     if (ok) return cuerpo;
     final detalle = (cuerpo is Map && cuerpo['detail'] != null)
         ? cuerpo['detail'].toString()

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -39,7 +38,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             SolicitudScreen(args: state.extra as Map<String, dynamic>?),
       ),
       GoRoute(
-          path: '/borradores', builder: (_, __) => const BorradoresScreen()),
+        path: '/borradores',
+        builder: (_, __) => const BorradoresScreen(),
+      ),
       GoRoute(path: '/simulador', builder: (_, __) => const SimuladorScreen()),
       GoRoute(path: '/historial', builder: (_, __) => const HistorialScreen()),
     ],

@@ -1,46 +1,45 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+// ignore_for_file: avoid_print
+
 import 'core/network/api_client.dart';
 import 'features/auth/data/auth_remote_datasource.dart';
 
-void main() async {
+Future<void> main() async {
+  const documento = String.fromEnvironment('TEST_CLIENTE_DOCUMENTO');
+  const password = String.fromEnvironment('TEST_CLIENTE_PASSWORD');
+
+  if (documento.isEmpty || password.isEmpty) {
+    throw StateError(
+      'Define TEST_CLIENTE_DOCUMENTO y TEST_CLIENTE_PASSWORD para ejecutar '
+      'el diagnostico.',
+    );
+  }
+
   print('=== INICIANDO SCRIPT DART PURO ===');
   final api = ApiClient();
   final remote = AuthRemoteDataSource(api);
 
   print('--- EJECUTANDO LOGIN ---');
   try {
-    final res = await remote.login(documento: '73431102', password: 'admin');
-    print('Login Exitoso. Token: \...');
+    await remote.login(documento: documento, password: password);
+    print('Login exitoso.');
   } catch (e) {
-    print('Login Fallido: \');
+    print('Login fallido: $e');
+    return;
   }
 
   print('--- EJECUTANDO GET CUENTAS ---');
   try {
     final cuentas = await api.get('/cliente/cuentas');
-    print('Cuentas obtenidas: \');
+    print('Cuentas obtenidas: $cuentas');
   } catch (e) {
-    print('Cuentas fallo: \');
+    print('Consulta de cuentas fallida: $e');
   }
 
   print('--- EJECUTANDO GET SOLICITUDES ---');
   try {
     final solicitudes = await api.get('/cliente/solicitudes');
-    print('Solicitudes obtenidas: \');
+    print('Solicitudes obtenidas: $solicitudes');
   } catch (e) {
-    print('Solicitudes fallo: \');
-  }
-
-  print('--- EJECUTANDO POST SOLICITUDES ---');
-  try {
-    final res = await api.post('/cliente/solicitudes', {
-      "numero_documento": "73431102",
-      "monto_solicitado": 1000,
-      "plazo_meses": 12
-    });
-    print('Solicitud creada: \');
-  } catch (e) {
-    print('Solicitud fallo: \');
+    print('Consulta de solicitudes fallida: $e');
   }
 }
