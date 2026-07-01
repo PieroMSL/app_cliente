@@ -30,28 +30,25 @@ class SolicitudViewModel extends StateNotifier<SolicitudState> {
 
 final solicitudViewModelProvider =
     StateNotifierProvider<SolicitudViewModel, SolicitudState>((ref) {
-  return SolicitudViewModel(ref.watch(solicitudRepositoryProvider));
-});
+      return SolicitudViewModel(ref.watch(solicitudRepositoryProvider));
+    });
 
 /// Historial de solicitudes del mes (HU-20).
-final solicitudesHistorialProvider =
-    FutureProvider<List<SolicitudResumen>>((ref) {
+final solicitudesHistorialProvider = FutureProvider<List<SolicitudResumen>>((
+  ref,
+) {
   return ref.watch(solicitudRepositoryProvider).listar();
 });
 
-/// Notas internas de una solicitud (RF-72), por id de solicitud.
-final notasProvider =
-    FutureProvider.autoDispose.family<List<String>, String>((ref, id) {
-  return ref.watch(solicitudRepositoryProvider).listarNotas(id);
-});
-
 /// Fuente local de borradores (HU-18).
-final solicitudLocalProvider =
-    Provider<SolicitudLocalDataSource>((ref) => SolicitudLocalDataSource());
+final solicitudLocalProvider = Provider<SolicitudLocalDataSource>(
+  (ref) => SolicitudLocalDataSource(),
+);
 
 /// Lista de borradores del cliente autenticado.
-final borradoresProvider =
-    FutureProvider.autoDispose<List<BorradorSolicitud>>((ref) {
+final borradoresProvider = FutureProvider.autoDispose<List<BorradorSolicitud>>((
+  ref,
+) {
   final cliente = ref.watch(loginViewModelProvider).cliente;
   if (cliente == null) return Future.value(const []);
   return ref.watch(solicitudLocalProvider).listar(cliente.id);

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_client.dart';
 import '../data/auth_repository.dart';
 import '../domain/cliente_model.dart';
 
@@ -104,11 +105,23 @@ class LoginViewModel extends StateNotifier<AuthState> {
         bloqueadoHasta: null,
       );
       await _repo.guardarEstadoBloqueo(intentos: 0, hasta: null);
-    } catch (e) {
+    } on ApiException catch (e) {
+      if (e.statusCode == 423) {
+        state = state.copyWith(
+          status: AuthStatus.error,
+          error: 'La cuenta esta bloqueada. Intenta nuevamente mas tarde.',
+        );
+        return;
+      }
+      if (e.statusCode != 401) {
+        state = state.copyWith(status: AuthStatus.error, error: e.message);
+        return;
+      }
       final intentos = state.intentosFallidos + 1;
       final bloquear = intentos >= _maxIntentos;
-      final hasta =
-          bloquear ? DateTime.now().add(_bloqueo) : state.bloqueadoHasta;
+      final hasta = bloquear
+          ? DateTime.now().add(_bloqueo)
+          : state.bloqueadoHasta;
       state = state.copyWith(
         status: AuthStatus.error,
         error: bloquear
@@ -118,6 +131,11 @@ class LoginViewModel extends StateNotifier<AuthState> {
         bloqueadoHasta: hasta,
       );
       await _repo.guardarEstadoBloqueo(intentos: intentos, hasta: hasta);
+    } catch (_) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        error: 'No se pudo conectar con Banco Andino. Intenta nuevamente.',
+      );
     }
   }
 
@@ -153,7 +171,8 @@ class LoginViewModel extends StateNotifier<AuthState> {
   }
 }
 
-final loginViewModelProvider =
-    StateNotifierProvider<LoginViewModel, AuthState>((ref) {
-  return LoginViewModel(ref.watch(authRepositoryProvider));
-});
+final loginViewModelProvider = StateNotifierProvider<LoginViewModel, AuthState>(
+  (ref) {
+    return LoginViewModel(ref.watch(authRepositoryProvider));
+  },
+);

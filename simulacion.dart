@@ -1,5 +1,5 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+// ignore_for_file: avoid_print
+
 import 'lib/core/network/api_client.dart';
 import 'lib/features/auth/data/auth_remote_datasource.dart';
 

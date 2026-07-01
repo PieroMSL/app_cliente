@@ -19,18 +19,6 @@ class SolicitudRepository {
         .map((e) => SolicitudResumen.fromJson(e as Map<String, dynamic>))
         .toList();
   }
-
-  /// Notas internas de una solicitud (RF-72).
-  Future<List<String>> listarNotas(String solicitudId) async {
-    final data = await _api.get('/solicitudes/$solicitudId/notas');
-    return (data as List)
-        .map((e) => (e as Map<String, dynamic>)['contenido'] as String? ?? '')
-        .toList();
-  }
-
-  Future<void> agregarNota(String solicitudId, String contenido) async {
-    await _api.post('/solicitudes/$solicitudId/notas', {'contenido': contenido});
-  }
 }
 
 final solicitudRepositoryProvider = Provider<SolicitudRepository>((ref) {

@@ -53,24 +53,31 @@ class _SolicitudScreenState extends ConsumerState<SolicitudScreen> {
   void initState() {
     super.initState();
     final a = widget.args;
-    if (a == null) return;
-    _borradorId = a['borradorId'] as String?;
-    if (a['paso'] is int) _paso = (a['paso'] as int).clamp(0, 3);
-    if (a['monto'] is num) _monto = (a['monto'] as num).toDouble();
-    if (a['plazo'] is num) _plazo = (a['plazo'] as num).toInt();
-    final d = a['datos'] as Map<String, dynamic>?;
-    if (d != null) {
-      _doc.text = d['numero_documento']?.toString() ?? '';
-      _nombres.text = d['nombres']?.toString() ?? '';
-      _apellidos.text = d['apellidos']?.toString() ?? '';
-      _telefono.text = d['telefono']?.toString() ?? '';
-      _tipoNegocio = d['tipo_negocio']?.toString() ?? 'Comercio';
-      _nombreNegocio.text = d['nombre_negocio']?.toString() ?? '';
-      _ingresos.text = (d['ingresos_estimados'] ?? '').toString();
-      if (d['monto_solicitado'] is num) {
-        _monto = (d['monto_solicitado'] as num).toDouble();
+    if (a != null) {
+      _borradorId = a['borradorId'] as String?;
+      if (a['paso'] is int) _paso = (a['paso'] as int).clamp(0, 3);
+      if (a['monto'] is num) _monto = (a['monto'] as num).toDouble();
+      if (a['plazo'] is num) _plazo = (a['plazo'] as num).toInt();
+      final d = a['datos'] as Map<String, dynamic>?;
+      if (d != null) {
+        _telefono.text = d['telefono']?.toString() ?? '';
+        _tipoNegocio = d['tipo_negocio']?.toString() ?? 'Comercio';
+        _nombreNegocio.text = d['nombre_negocio']?.toString() ?? '';
+        _ingresos.text = (d['ingresos_estimados'] ?? '').toString();
+        if (d['monto_solicitado'] is num) {
+          _monto = (d['monto_solicitado'] as num).toDouble();
+        }
+        if (d['plazo_meses'] is num) {
+          _plazo = (d['plazo_meses'] as num).toInt();
+        }
       }
-      if (d['plazo_meses'] is num) _plazo = (d['plazo_meses'] as num).toInt();
+    }
+
+    final cliente = ref.read(loginViewModelProvider).cliente;
+    if (cliente != null) {
+      _doc.text = cliente.numeroDocumento;
+      _nombres.text = cliente.nombres;
+      _apellidos.text = cliente.apellidos;
     }
   }
 
@@ -202,9 +209,7 @@ class _SolicitudScreenState extends ConsumerState<SolicitudScreen> {
     }
   }
 
-  void _enviar() {
-    // Pasa a la pantalla de transmision (M8), que muestra el progreso por
-    // pasos y hace el registro real en el backend.
+  Future<void> _enviar() async {
     final datos = {
       ..._formData(),
       'moneda': 'PEN',
@@ -215,7 +220,27 @@ class _SolicitudScreenState extends ConsumerState<SolicitudScreen> {
       'firma_cliente_base64':
           base64Encode(utf8.encode('firma:${_doc.text.trim()}')),
     };
-    context.push('/transmision', extra: datos);
+
+    await ref.read(solicitudViewModelProvider.notifier).enviar(datos);
+    if (!mounted) return;
+
+    final state = ref.read(solicitudViewModelProvider);
+    if (state.creada != null) {
+      ref.invalidate(solicitudesHistorialProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Solicitud enviada. Expediente ${state.creada!.numeroExpediente}',
+          ),
+        ),
+      );
+      context.go('/dashboard?tab=creditos');
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(state.error ?? 'No se pudo enviar la solicitud.')),
+    );
   }
 
   @override
@@ -291,9 +316,10 @@ class _SolicitudScreenState extends ConsumerState<SolicitudScreen> {
     switch (_paso) {
       case 0:
         return Column(children: [
-          _campo(_doc, 'Documento (DNI)', numerico: true, max: 8),
-          _campo(_nombres, 'Nombres'),
-          _campo(_apellidos, 'Apellidos'),
+          _campo(_doc, 'Documento (DNI)',
+              numerico: true, max: 8, enabled: false),
+          _campo(_nombres, 'Nombres', enabled: false),
+          _campo(_apellidos, 'Apellidos', enabled: false),
           _campo(_telefono, 'Telefono', numerico: true, max: 9),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
@@ -391,11 +417,12 @@ class _SolicitudScreenState extends ConsumerState<SolicitudScreen> {
   }
 
   Widget _campo(TextEditingController c, String label,
-      {bool numerico = false, int? max}) {
+      {bool numerico = false, int? max, bool enabled = true}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: TextField(
         controller: c,
+        enabled: enabled,
         keyboardType: numerico ? TextInputType.number : TextInputType.text,
         inputFormatters:
             numerico ? [FilteringTextInputFormatter.digitsOnly] : null,
